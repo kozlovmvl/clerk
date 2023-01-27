@@ -1,11 +1,14 @@
 use actix_web::{get, post, web, HttpResponse, Responder, Result};
+use http::StatusCode;
 
 use crate::services::{user_login, get_list_users, get_one_user};
 
 #[post("/login")]
 async fn login(request: String) -> Result<impl Responder> {
-    let success_login = user_login(&request);
-    Ok(HttpResponse::Ok().json(success_login))
+    match user_login(&request) {
+        Ok(success) => Ok(HttpResponse::Ok().json(success)),
+        Err(err) => Ok(HttpResponse::build(StatusCode::BAD_REQUEST).json(err))
+    }
 }
 
 #[get("/list")]

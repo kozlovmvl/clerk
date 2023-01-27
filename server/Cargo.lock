@@ -370,6 +370,7 @@ dependencies = [
  "actix-web-actors",
  "diesel",
  "dotenvy",
+ "http",
  "serde",
  "serde_json",
 ]

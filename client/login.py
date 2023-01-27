@@ -31,7 +31,9 @@ class LoginWidget(QWidget):
             body={'username': self.line_login.text(), 'password': self.line_password.text()}
         )
         if response.status == 200:
-            print('success')
+            print(response.body)
+        elif response.status == 400:
+            print(response.body)
         else:
             print(response.status)
 

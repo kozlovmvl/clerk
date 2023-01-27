@@ -2,18 +2,20 @@ use diesel::prelude::*;
 use serde_json;
 
 use crate::db::establish_connection;
-use crate::models::{User, LoginData};
+use crate::models::{User, LoginData, OkLogin, ErrLogin};
 use crate::schema::users::dsl::*;
 
-pub fn user_login(data: &str) -> User {
+pub fn user_login(data: &str) -> Result<OkLogin, ErrLogin> {
     let mut conn = establish_connection();
     let login_data: LoginData = serde_json::from_str(data).expect("Error parse login data.");
     let result = users
         .filter(username.eq(login_data.username).and(password.eq(login_data.password)))
         .select((id, username))
-        .first::<User>(&mut conn)
-        .expect("Error login.");
-    result
+        .first::<User>(&mut conn);
+    match result {
+        Ok(_) => Ok(OkLogin{ token: "token".to_string() }),
+        Err(_) => Err(ErrLogin{ value: "not found".to_string() })
+    }
 }
 
 pub fn get_list_users() -> Vec<User> {

@@ -12,3 +12,13 @@ pub struct LoginData {
     pub username: String,
     pub password: String,
 }
+
+#[derive(Serialize)]
+pub struct OkLogin {
+    pub token: String,
+}
+
+#[derive(Serialize)]
+pub struct ErrLogin {
+    pub value: String,
+}
