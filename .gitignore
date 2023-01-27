@@ -1,0 +1,5 @@
+.nvimlog
+*/.nvimlog
+server/target
+*/__pycache__
+*/venv
