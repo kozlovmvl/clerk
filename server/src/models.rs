@@ -1,8 +1,9 @@
-use serde::{Serialize, Deserialize};
+use diesel::prelude::*;
+use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Queryable, Serialize)]
 pub struct User {
-    id: i32,
-    username: String,
-    token: String,
+    pub id: i32,
+    pub username: String,
+    pub token: String,
 }
