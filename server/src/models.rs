@@ -41,14 +41,17 @@ impl User {
 
 impl AuthToken {
 
-    pub fn get_or_create(conn: &mut PgConn, user_id_: i32) -> String {
+    pub fn get(conn: &mut PgConn, user_id_: i32) -> String {
         use crate::schema::authtokens::dsl::*;
         let query = authtokens
             .filter(user_id.eq(user_id_))
             .select((value, created, user_id))
             .first::<Self>(conn);
         match query {
-            Ok(token) => token.value.clone(),
+            Ok(mut authtoken) => {
+                authtoken.update(conn);
+                authtoken.value
+            },
             Err(_) => { 
                 let authtoken = Self::create(conn, user_id_);
                 authtoken.value
@@ -69,14 +72,13 @@ impl AuthToken {
         created_authtoken
     }
 
-    pub fn update(&mut self, conn: &mut PgConn) -> Self {
+    pub fn update(&mut self, conn: &mut PgConn) {
         use crate::schema::authtokens::dsl::*;
         let new_value = Uuid::new_v4().to_string();
         let new_created = Utc::now().naive_utc();
-        let updated_authtoken = diesel::update(authtokens.find(self.value.clone()))
+        diesel::update(authtokens.find(self.value.clone()))
             .set((value.eq(new_value), created.eq(new_created)))
             .get_result::<AuthToken>(conn)
             .expect("Failed to update authtoken.");
-        updated_authtoken
     }
 }

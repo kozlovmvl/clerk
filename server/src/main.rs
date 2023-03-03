@@ -12,7 +12,7 @@ async fn login(mut conn: DbConn, request: Json<LoginRequest>) -> Result<Json<Log
         Ok(value) => value,
         Err(_) => return Err(Status::Unauthorized)
     };
-    let token: String = AuthToken::get_or_create(&mut conn.0, user.id);
+    let token: String = AuthToken::get(&mut conn.0, user.id);
     Ok(Json(LoginResponse{ token: token }))
 }
 
