@@ -1,5 +1,7 @@
 use chrono::{NaiveDateTime, offset::Utc};
 use diesel::prelude::*;
+use rocket::http::{Status, Header};
+use rocket::request::{Request, FromRequest, Outcome};
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -37,6 +39,14 @@ impl User {
             .first::<Self>(conn);
         query
     }
+
+    pub fn get_by_id(conn: &mut PgConn, id_: i32) -> Self {
+        use crate::schema::users::dsl::*;
+        users
+            .filter(id.eq(id_))
+            .select((id, username))
+            .first::<Self>(conn)
+    }
 }
 
 impl AuthToken {
@@ -57,6 +67,9 @@ impl AuthToken {
                 authtoken.value
             }
         }
+    }
+    pub fn get_by_value(conn: &PgConn, value: &str) -> QueryResult<Self> {
+
     }
 
     pub fn create(conn: &mut PgConn, user_id_: i32) -> Self {
@@ -80,5 +93,22 @@ impl AuthToken {
             .set((value.eq(new_value), created.eq(new_created)))
             .get_result::<AuthToken>(conn)
             .expect("Failed to update authtoken.");
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for User {
+    type Error = ();
+
+    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let mut auth_header = req.headers().get_one("Authorization");
+        match auth_header {
+            Some(value) => {
+                let authtoken = AuthToken::get_by_value(&mut conn, value);
+                let user = Self::get_by_id(&mut conn, authtoken.user_id);
+                Outcome::Success(user),
+            },
+            None => Outcome::Failure((Status::NonAuthoritativeInformation, ()))
+        }
     }
 }
