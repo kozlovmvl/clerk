@@ -6,6 +6,7 @@ use rocket::http::Status;
 use rocket::request::{Request, FromRequest, Outcome};
 
 type PgPool = Pool<ConnectionManager<PgConnection>>;
+pub type PgConn = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub fn get_pool() -> PgPool {
     let url = "postgres://admin:password@127.0.0.1:5432/clerk_db";
@@ -16,7 +17,7 @@ pub fn get_pool() -> PgPool {
         .expect("Failed to create pool.")
 }
 
-pub struct DbConn(pub PooledConnection<ConnectionManager<PgConnection>>);
+pub struct DbConn(pub PgConn);
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for DbConn {

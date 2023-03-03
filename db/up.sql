@@ -2,12 +2,18 @@ begin;
 create table users (
 	id serial primary key,
 	username varchar(100),
-	password varchar(200),
-	token varchar(32)
+	password varchar(200)
 );
 
 insert into users values 
-	(1, 'admin', 'password', null);
+	(1, 'admin', 'password');
+
+create table authtokens (
+    value varchar(32) primary key,
+    created timestamp not null,
+    user_id integer not null unique,
+    foreign key (user_id) references users (id)
+);
 
 create table projects (
 	id serial primary key,

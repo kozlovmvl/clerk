@@ -6,3 +6,11 @@ diesel::table! {
         token -> Varchar,
     }
 }
+
+diesel::table! {
+    authtokens (value) {
+        value -> Varchar,
+        created -> Timestamp,
+        user_id -> Int4,
+    }
+}

@@ -1,22 +1,19 @@
 #[macro_use] extern crate rocket;
 use rocket::serde::json::Json;
-use diesel::prelude::*;
+use rocket::http::Status;
 
 use clerk::db::{get_pool, DbConn};
-use clerk::models::User;
+use clerk::models::{User, AuthToken};
 use clerk::json::*;
 
 #[post("/login", data="<request>")]
-async fn login(mut conn: DbConn, request: Json<LoginRequest>) -> Json<LoginResponse> {
-    use clerk::schema::users::dsl::*;
-    let query = users
-        .filter(username.eq(request.username.clone()).and(password.eq(request.password.clone())))
-        .select((id, username, token))
-        .first::<User>(&mut conn.0);
-    match query {
-        Ok(user) => Json(LoginResponse{ token: user.token.clone() }),
-        Err(_) => Json(LoginResponse{ token: "".to_string() })
-    }
+async fn login(mut conn: DbConn, request: Json<LoginRequest>) -> Result<Json<LoginResponse>, Status> {
+    let user: User = match User::get(&mut conn.0, &request.username, &request.password) {
+        Ok(value) => value,
+        Err(_) => return Err(Status::Unauthorized)
+    };
+    let token: String = AuthToken::get_or_create(&mut conn.0, user.id);
+    Ok(Json(LoginResponse{ token: token }))
 }
 
 #[rocket::main]
