@@ -5,7 +5,7 @@ use diesel::pg::PgConnection;
 use rocket::http::Status;
 use rocket::request::{Request, FromRequest, Outcome};
 
-type PgPool = Pool<ConnectionManager<PgConnection>>;
+pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 pub type PgConn = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub fn get_pool() -> PgPool {

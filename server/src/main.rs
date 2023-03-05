@@ -16,11 +16,17 @@ async fn login(mut conn: DbConn, request: Json<LoginRequest>) -> Result<Json<Log
     Ok(Json(LoginResponse{ token: token }))
 }
 
+#[post("/logout")]
+async fn logout(user: User) -> &'static str {
+    println!("{}", user.username);
+    "logout"
+}
+
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
     let _rocket = rocket::build()
         .manage(get_pool())
-        .mount("/auth", routes![login])
+        .mount("/auth", routes![login, logout])
         .launch()
         .await?;
     Ok(())

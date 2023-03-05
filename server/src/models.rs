@@ -1,11 +1,11 @@
 use chrono::{NaiveDateTime, offset::Utc};
 use diesel::prelude::*;
-use rocket::http::{Status, Header};
+use rocket::http::Status;
 use rocket::request::{Request, FromRequest, Outcome};
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::db::PgConn;
+use crate::db::{PgConn, PgPool};
 use crate::schema::authtokens;
 
 #[derive(Queryable, Serialize)]
@@ -69,10 +69,11 @@ impl AuthToken {
             }
         }
     }
-    pub fn get_by_value(conn: &mut PgConn, value: &str) -> QueryResult<Self> {
+
+    pub fn get_by_value(conn: &mut PgConn, value_: &str) -> QueryResult<Self> {
         use crate::schema::authtokens::dsl::*;
         let query = authtokens
-            .filter(value.eq(value))
+            .filter(value.eq(value_))
             .select((value, created, user_id))
             .first::<Self>(conn);
         query
@@ -96,9 +97,11 @@ impl AuthToken {
         let new_value = Uuid::new_v4().to_string();
         let new_created = Utc::now().naive_utc();
         diesel::update(authtokens.find(self.value.clone()))
-            .set((value.eq(new_value), created.eq(new_created)))
+            .set((value.eq(new_value.clone()), created.eq(new_created.clone())))
             .get_result::<AuthToken>(conn)
             .expect("Failed to update authtoken.");
+        self.value = new_value;
+        self.created = new_created;
     }
 }
 
@@ -107,7 +110,12 @@ impl<'r> FromRequest<'r> for User {
     type Error = ();
 
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let mut auth_header = req.headers().get_one("Authorization");
+        let auth_header = req.headers().get_one("Authorization");
+        let pool = req.rocket().state::<PgPool>().unwrap();
+        let mut conn = match pool.get() {
+            Ok(v) => v,
+            Err(_) => return Outcome::Failure((Status::NonAuthoritativeInformation, ()))
+        };
         match auth_header {
             Some(value) => {
                 let authtoken = match AuthToken::get_by_value(&mut conn, value) {
