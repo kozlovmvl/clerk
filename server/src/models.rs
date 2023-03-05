@@ -40,12 +40,13 @@ impl User {
         query
     }
 
-    pub fn get_by_id(conn: &mut PgConn, id_: i32) -> Self {
+    pub fn get_by_id(conn: &mut PgConn, id_: i32) -> QueryResult<Self> {
         use crate::schema::users::dsl::*;
-        users
+        let query = users
             .filter(id.eq(id_))
             .select((id, username))
-            .first::<Self>(conn)
+            .first::<Self>(conn);
+        query
     }
 }
 
@@ -68,8 +69,13 @@ impl AuthToken {
             }
         }
     }
-    pub fn get_by_value(conn: &PgConn, value: &str) -> QueryResult<Self> {
-
+    pub fn get_by_value(conn: &mut PgConn, value: &str) -> QueryResult<Self> {
+        use crate::schema::authtokens::dsl::*;
+        let query = authtokens
+            .filter(value.eq(value))
+            .select((value, created, user_id))
+            .first::<Self>(conn);
+        query
     }
 
     pub fn create(conn: &mut PgConn, user_id_: i32) -> Self {
@@ -104,9 +110,15 @@ impl<'r> FromRequest<'r> for User {
         let mut auth_header = req.headers().get_one("Authorization");
         match auth_header {
             Some(value) => {
-                let authtoken = AuthToken::get_by_value(&mut conn, value);
-                let user = Self::get_by_id(&mut conn, authtoken.user_id);
-                Outcome::Success(user),
+                let authtoken = match AuthToken::get_by_value(&mut conn, value) {
+                    Ok(v) => v,
+                    Err(_) => return Outcome::Failure((Status::NonAuthoritativeInformation, ()))
+                };
+                let user = match Self::get_by_id(&mut conn, authtoken.user_id) {
+                    Ok(v) => v,
+                    Err(_) => return Outcome::Failure((Status::NonAuthoritativeInformation, ()))
+                };
+                Outcome::Success(user)
             },
             None => Outcome::Failure((Status::NonAuthoritativeInformation, ()))
         }
