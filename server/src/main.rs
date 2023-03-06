@@ -17,8 +17,8 @@ async fn login(mut conn: DbConn, request: Json<LoginRequest>) -> Result<Json<Log
 }
 
 #[post("/logout")]
-async fn logout(user: User) -> &'static str {
-    println!("{}", user.username);
+async fn logout(mut conn: DbConn, user: User) -> &'static str {
+    AuthToken::delete(&mut conn.0, user.id);
     "logout"
 }
 

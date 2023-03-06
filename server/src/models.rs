@@ -103,6 +103,13 @@ impl AuthToken {
         self.value = new_value;
         self.created = new_created;
     }
+
+    pub fn delete(conn: &mut PgConn, user_id_: i32) {
+        use crate::schema::authtokens::dsl::*;
+        diesel::delete(authtokens.filter(user_id.eq(user_id_)))
+            .execute(conn)
+            .expect("Failed to delete authtoken.");
+    }
 }
 
 #[rocket::async_trait]
